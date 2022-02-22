@@ -1,7 +1,7 @@
 
 import { ipcRenderer, IpcRendererEvent } from 'electron'
 
-class CiderPluginTemplate {
+class MusicRecommendationsPlugin {
   constructor() {
       // Setting up a ipcRenderer channel for back end to communicate with
       ipcRenderer.on('plugin.backendComm', (event: IpcRendererEvent, message: any) => {
@@ -14,5 +14,4 @@ class CiderPluginTemplate {
   }
 }
 
-
-new CiderPluginTemplate()
+new MusicRecommendationsPlugin()
