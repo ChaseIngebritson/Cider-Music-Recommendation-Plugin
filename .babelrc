@@ -1,0 +1,12 @@
+{
+  "presets": [
+    ["@babel/preset-typescript", {
+      "targets": {
+        "node": "current"
+      }
+    }],
+    ["@babel/preset-env", {
+      "exclude": ["transform-regenerator"]
+    }]
+  ]
+}
