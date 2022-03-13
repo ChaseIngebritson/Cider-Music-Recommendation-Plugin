@@ -1,5 +1,5 @@
 import path from 'path'
-import { BrowserWindow, ipcMain, IpcMainEvent } from 'electron'    
+import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 
 export default class MusicRecommendationsPlugin {
     /**
@@ -22,7 +22,7 @@ export default class MusicRecommendationsPlugin {
     constructor(env) {
         this.env = env
 
-        console.debug(`[Plugin][${this.name}] Loading Complete.`)
+        this.debug('Loading Complete')
     }
 
     /**
@@ -30,7 +30,7 @@ export default class MusicRecommendationsPlugin {
      */
     async onReady(win): Promise<void> {
         this.win = win
-        console.debug(`[Plugin][${this.name}] Ready.`)
+        this.debug('Ready')
 
         // ipcMain.handle("plugin.frontendComm", (event: IpcMainEvent, message: any) => {
         //     console.debug(`Frontend says: ${message}`)
@@ -46,15 +46,17 @@ export default class MusicRecommendationsPlugin {
      * @param win The current browser window
      */
     async onRendererReady(win: BrowserWindow) {
-        console.log(`[Plugin][${this.name}] Renderer Ready`)
-        // this.env.utils.loadJSFrontend(path.join(this.env.dir, "index.frontend.js"))
+        this.debug('Renderer Ready')
+        
+        this.env.utils.loadJSFrontend(path.join(this.env.dir, "index.frontend.js"))
+        this.env.utils.loadJSFrontend(path.join(this.env.dir, "musicRecommendations-vue.js"))
     }
 
     /**
      * Runs on app stop
      */
     onBeforeQuit(): void {
-        console.log(`[Plugin][${this.name}] Stopped`)
+        this.debug('Stopped')
     }
 
     /**
@@ -64,7 +66,7 @@ export default class MusicRecommendationsPlugin {
     async onPlaybackStateDidChange(attributes: object): Promise<void> {
 
         const res = await this.getRelatedArtists("1500046401")
-        console.log(res)
+        this.debug(res)
     }
 
     /**
@@ -73,6 +75,10 @@ export default class MusicRecommendationsPlugin {
      */
     onNowPlayingItemDidChange(attributes: object): void {
 
+    }
+
+    private debug(text) {
+        console.log(`[Plugin][${this.name}]`, text)
     }
 
     private async getRelatedArtists(id) {
