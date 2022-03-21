@@ -1,7 +1,5 @@
 import d3Tree from './d3Tree-vue'
 
-declare var Vue: any;
-
 Vue.component('plugin.music-recommendations', {
   template: `
     <div>

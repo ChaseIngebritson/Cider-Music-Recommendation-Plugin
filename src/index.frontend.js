@@ -1,13 +1,4 @@
-import { ipcRenderer, IpcRendererEvent } from 'electron'
-
-// Move to its own type file
-declare var CiderFrontAPI: any;
-declare var uuidv4: any;
-declare var app: any;
-
-interface MusicRecommendationsPlugin {
-  menuEntryId: any;
-}
+// import { ipcRenderer, IpcRendererEvent } from 'electron'
 
 class MusicRecommendationsPlugin {
   constructor() {

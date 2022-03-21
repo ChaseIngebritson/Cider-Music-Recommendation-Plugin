@@ -1,8 +1,6 @@
 // https://github.com/gywgithub/vue-d3-examples/blob/master/src/components/Trees/TreeV.vue
 import { select, tree, hierarchy } from '../deps/d3'
 
-declare var Vue: any;
-
 export default Vue.component('d3-tree', {
   template: `
     <div>

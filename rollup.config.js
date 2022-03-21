@@ -1,13 +1,13 @@
-import typescript from '@rollup/plugin-typescript'
 import copy from 'rollup-plugin-copy'
 import { babel } from '@rollup/plugin-babel';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
 
 export default {
   input: [
-    'src/index.ts', 
-    'src/index.frontend.ts', 
-    'src/components/musicRecommendations-vue.ts'
+    'src/index.js', 
+    'src/index.frontend.js', 
+    'src/components/musicRecommendations-vue.js'
   ],
   output: { 
     dir: 'dist', 
@@ -15,11 +15,7 @@ export default {
   },
   external: ['path', 'fs', 'electron'],
   plugins: [
-    typescript({ 
-      lib: ["es2021", "dom"],
-      target: "es5",
-      moduleResolution: "node"
-    }),
+    commonjs(),
     babel({ babelHelpers: 'bundled' }),
     nodeResolve({
       // use "jsnext:main" if possible

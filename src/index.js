@@ -5,16 +5,16 @@ export default class MusicRecommendationsPlugin {
     /**
      * Base Plugin Details (Eventually implemented into a GUI in settings)
      */
-    public name: string = 'Music Recommendations';
-    public description: string = 'A template for building Cider plugins using Typescript.';
-    public version: string = '1.0.0';
-    public author: string = 'Chase Ingebritson';
+    name = 'Music Recommendations';
+    description = 'A template for building Cider plugins using Typescript.';
+    version = '1.0.0';
+    author = 'Chase Ingebritson';
          
     /**
      * Private variables for interaction in plugins
      */
-    private env
-    private win
+    env
+    win
 
     /**
      * Runs on plugin load (Currently run on application start)
@@ -28,7 +28,7 @@ export default class MusicRecommendationsPlugin {
     /**
      * Runs on app ready
      */
-    async onReady(win): Promise<void> {
+    async onReady(win) {
         this.win = win
         this.debug('Ready')
 
@@ -45,7 +45,7 @@ export default class MusicRecommendationsPlugin {
      * Runs on renderer ready
      * @param win The current browser window
      */
-    async onRendererReady(win: BrowserWindow) {
+    async onRendererReady(win) {
         this.debug('Renderer Ready')
         
         this.env.utils.loadJSFrontend(path.join(this.env.dir, "index.frontend.js"))
@@ -55,7 +55,7 @@ export default class MusicRecommendationsPlugin {
     /**
      * Runs on app stop
      */
-    onBeforeQuit(): void {
+    onBeforeQuit() {
         this.debug('Stopped')
     }
 
@@ -63,7 +63,7 @@ export default class MusicRecommendationsPlugin {
      * Runs on playback State Change
      * @param attributes Music Attributes (attributes.status = current state)
      */
-    async onPlaybackStateDidChange(attributes: object): Promise<void> {
+    async onPlaybackStateDidChange(attributes) {
 
         const res = await this.getRelatedArtists("1500046401")
         this.debug(res)
@@ -73,15 +73,15 @@ export default class MusicRecommendationsPlugin {
      * Runs on song change
      * @param attributes Music Attributes
      */
-    onNowPlayingItemDidChange(attributes: object): void {
+    onNowPlayingItemDidChange(attributes) {
 
     }
 
-    private debug(text) {
+    debug(text) {
         console.log(`[Plugin][${this.name}]`, text)
     }
 
-    private async getRelatedArtists(id) {
+    async getRelatedArtists(id) {
         const response = await this.win.webContents.executeJavaScript(`
             (async () => {
                 const mk = MusicKit.getInstance()
