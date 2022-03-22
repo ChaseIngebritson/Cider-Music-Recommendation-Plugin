@@ -80,23 +80,4 @@ export default class MusicRecommendationsPlugin {
     debug(text) {
         console.log(`[Plugin][${this.name}]`, text)
     }
-
-    async getRelatedArtists(id) {
-        const response = await this.win.webContents.executeJavaScript(`
-            (async () => {
-                const mk = MusicKit.getInstance()
-
-                const storeFront = mk.storefrontId
-                const res = await mk.api.v3.music("/v1/catalog/" + storeFront + "/artists/${id}", {
-                    views: ["similar-artists"]
-                })
-                if (!res) console.error('[Plugin][${this.name}] Request failed: /v1/catalog/" + storeFront + "/artists/${id}')
-                return res.data
-            })()
-        `).catch(console.error)
-
-        const artist = response?.data[0]
-
-        return artist.views['similar-artists'].data
-    }
 }

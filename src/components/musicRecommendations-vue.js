@@ -1,94 +1,85 @@
-import d3Tree from './d3Tree-vue'
+import VueTree from '@ssthouse/vue-tree-chart'
+import { getArtist, getSimilarArtists, getArtwork } from '../utils/frontend/music'
 
 Vue.component('plugin.music-recommendations', {
   template: `
     <div>
-      <d3-tree :data="treeData" />
+      <vue-tree
+        :dataset="treeData"
+        :config="treeConfig"
+        direction="horizontal"
+        class="tree"
+      >
+        <template v-slot:node="{ node, collapsed }" :collapsed="true">
+          <vue-tree-node :node="node" :collapsed="collapsed" @add-similar-artists="addSimilarArtists(node)" />
+        </template>
+      </vue-tree>
     </div>
   `,
   components: {
-    'd3-tree': d3Tree
+    'vue-tree': VueTree
   },
   data () {
     return {
-      treeData: {
-        'name': 'flare',
-        'children': [
-          {
-            'name': 'animate',
-            'children': [
-              { 'name': 'Easing', 'value': 17010 },
-              { 'name': 'FunctionSequence', 'value': 5842 },
-              {
-                'name': 'interpolate',
-                'children': [
-                  { 'name': 'ArrayInterpolator', 'value': 1983 },
-                  { 'name': 'ColorInterpolator', 'value': 2047 },
-                  { 'name': 'DateInterpolator', 'value': 1375 },
-                  { 'name': 'Interpolator', 'value': 8746 },
-                  { 'name': 'MatrixInterpolator', 'value': 2202 },
-                  { 'name': 'NumberInterpolator', 'value': 1382 },
-                  { 'name': 'ObjectInterpolator', 'value': 1629 },
-                  { 'name': 'PointInterpolator', 'value': 1675 },
-                  { 'name': 'RectangleInterpolator', 'value': 2042 }
-                ]
-              },
-              { 'name': 'ISchedulable', 'value': 1041 },
-              { 'name': 'Parallel', 'value': 5176 },
-              { 'name': 'Pause', 'value': 449 },
-              { 'name': 'Scheduler', 'value': 5593 },
-              { 'name': 'Sequence', 'value': 5534 },
-              { 'name': 'Transition', 'value': 9201 },
-              { 'name': 'Transitioner', 'value': 19975 },
-              { 'name': 'TransitionEvent', 'value': 1116 },
-              { 'name': 'Tween', 'value': 6006 }
-            ]
-          },
-          {
-            'name': 'display',
-            'children': [
-              { 'name': 'DirtySprite', 'value': 8833 },
-              { 'name': 'LineSprite', 'value': 1732 },
-              { 'name': 'RectSprite', 'value': 3623 },
-              { 'name': 'TextSprite', 'value': 10066 }
-            ]
-          },
-          {
-            'name': 'flex',
-            'children': [
-              { 'name': 'FlareVis', 'value': 4116 }
-            ]
-          },
-          {
-            'name': 'physics',
-            'children': [
-              { 'name': 'DragForce', 'value': 1082 },
-              { 'name': 'GravityForce', 'value': 1336 },
-              { 'name': 'IForce', 'value': 319 },
-              { 'name': 'NBodyForce', 'value': 10498 },
-              { 'name': 'Particle', 'value': 2822 },
-              { 'name': 'Simulation', 'value': 9983 },
-              { 'name': 'Spring', 'value': 2213 },
-              { 'name': 'SpringForce', 'value': 1681 }
-            ]
-          },
-          {
-            'name': 'scale',
-            'children': [
-              { 'name': 'IScaleMap', 'value': 2105 },
-              { 'name': 'LinearScale', 'value': 1316 },
-              { 'name': 'LogScale', 'value': 3151 },
-              { 'name': 'OrdinalScale', 'value': 3770 },
-              { 'name': 'QuantileScale', 'value': 2435 },
-              { 'name': 'QuantitativeScale', 'value': 4839 },
-              { 'name': 'RootScale', 'value': 1756 },
-              { 'name': 'Scale', 'value': 4268 },
-              { 'name': 'ScaleType', 'value': 1821 },
-              { 'name': 'TimeScale', 'value': 5833 }
-            ]
-          }
-        ]
+      treeData: {},
+      treeConfig: { 
+        nodeWidth: 120, 
+        nodeHeight: 80, 
+        levelHeight: 200
       }
+    }
+  },
+  async mounted () {
+    const artist = await getArtist(1500046401)
+    this.treeData = this.buildNode(artist)
+  },
+  methods: {
+    buildNode (artist) {
+      return {
+        name: artist.attributes.name,
+        artwork: getArtwork(artist.attributes.artwork, 50, 50),
+        details: artist,
+        children: []
+      }
+    },
+    async addSimilarArtists (node) {
+      const relatedArtists = await getSimilarArtists(node.details.id)
+      
+      const children = relatedArtists.map(artist => {
+        return this.buildNode(artist)
+      })
+
+      node.children = children
+      console.log(node)
+    }
+  }
+});
+
+Vue.component('vue-tree-node', {
+  template: `
+    <div
+      class="tree-rich-media-node"
+      :style="{ border: collapsed ? '2px solid grey' : '' }"
+    >
+      <img
+        :src="node.artwork"
+        style="width: 50px; height: 50px; border-raduis: 4px;"
+      />
+      <span style="padding: 4px 0; font-weight: bold;">{{ node.name }}</span>
+      <button @click="onNodeClick(node)">Open Artist</button>
+      <button @click="addSimilarArtists(node)">Add Similar Artists</button>
+    </div>
+  `,
+  props: {
+    node: Object,
+    collapsed: Boolean
+  },
+  methods: {
+    async onNodeClick(node) {
+      await window.app.getArtistFromID(node.details.id)
+    },
+    addSimilarArtists(node) {
+      this.$emit('add-similar-artists', node)
     }
   }
 });

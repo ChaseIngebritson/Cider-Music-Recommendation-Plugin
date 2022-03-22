@@ -2,6 +2,11 @@ import copy from 'rollup-plugin-copy'
 import { babel } from '@rollup/plugin-babel';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import dotenv from 'dotenv';
+
+dotenv.config()
+
+const OUTPUT_DIR = process.env.OUTPUT_DIR || 'dist'
 
 export default {
   input: [
@@ -10,7 +15,7 @@ export default {
     'src/components/musicRecommendations-vue.js'
   ],
   output: { 
-    dir: 'dist', 
+    dir: OUTPUT_DIR,
     format: 'cjs' 
   },
   external: ['path', 'fs', 'electron'],
@@ -24,8 +29,8 @@ export default {
     }),
     copy({
       targets: [
-        { src: 'package.json', dest: 'dist' },
-        { src: 'src/styles/musicrecommendation.less', dest: 'dist' }
+        { src: 'package.json', dest: OUTPUT_DIR },
+        { src: 'src/styles/musicrecommendation.less', dest: OUTPUT_DIR }
       ]
     })
   ]
