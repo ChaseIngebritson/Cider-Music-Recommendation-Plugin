@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup -c --environment NODE_ENV:production",
-    "start": "rollup -c -w",
+    "start": "rollup -c -w --environment NODE_ENV:development",
     "deploy": "yarn build && gh-pages -b main -d dist"
   },
   "author": "",

@@ -1,10 +1,6 @@
 # Cider Plugin Template
 
-This is a [Cider Music](https://github.com/ciderapp/Cider) plugin template designed to streamline the plugin creation process while using Typescript. The template attempts to adhere to the [Cider Music v2 plugin schema](https://github.com/ciderapp/plugin-schema-poc/tree/main/v2_plugin).
-
-## Please Note
-
-Version 2 of the Cider Music plugin schema is still in active development and will not work with the production version of Cider at the time of writing. This template will be updated as the plugin schema is better fleshed out.
+This is a [Cider Music](https://github.com/ciderapp/Cider) plugin for providing recommendations based on a given artist.
 
 ## Installation
 

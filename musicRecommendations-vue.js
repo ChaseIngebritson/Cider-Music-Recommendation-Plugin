@@ -1295,6 +1295,15 @@ async function getSimilarArtists(id) {
 function getArtwork(artwork, width, height) {
   return artwork.url.replace('{w}', width).replace('{h}', height);
 }
+async function getNowPlayingArtist() {
+  const musickit = window.app.mk;
+  const nowPlayingSong = musickit.nowPlayingItem;
+  const storefront = musickit.storefrontId;
+  const response = await musickit.api.v3.music(`/v1/catalog/${storefront}/songs/${nowPlayingSong.songId}`, {
+    views: ['artists']
+  });
+  return response?.data?.data[0]?.relationships?.artists?.data[0];
+}
 
 function insertNode(node, nodeId, newNode) {
   if (node.nodeId === nodeId) {
@@ -1302,6 +1311,15 @@ function insertNode(node, nodeId, newNode) {
   } else if (node.children) {
     for (let i = 0; i < node.children.length; i++) {
       insertNode(node.children[i], nodeId, newNode);
+    }
+  }
+}
+function removeChildren(node, nodeId) {
+  if (node.nodeId === nodeId) {
+    node.children = [];
+  } else if (node.children) {
+    for (let i = 0; i < node.children.length; i++) {
+      removeChildren(node.children[i], nodeId);
     }
   }
 }
@@ -1324,7 +1342,11 @@ Vue.component('plugin.music-recommendations', {
         class="tree"
       >
         <template v-slot:node="{ node }">
-          <vue-tree-node :node="node" @add-similar-artists="addSimilarArtists(node)" />
+          <vue-tree-node 
+            :node="node" 
+            @add-similar-artists="addSimilarArtists(node)"
+            @remove-similar-artists="removeSimilarArtists(node)"
+          />
         </template>
       </vue-tree>
     </div>
@@ -1345,7 +1367,8 @@ Vue.component('plugin.music-recommendations', {
   },
 
   async mounted() {
-    const artist = await getArtist(1500046401);
+    const nowPlayingArtist = await getNowPlayingArtist();
+    const artist = await getArtist(nowPlayingArtist.id);
     this.treeData = this.buildNode(artist);
   },
 
@@ -1368,6 +1391,10 @@ Vue.component('plugin.music-recommendations', {
         return this.buildNode(artist);
       });
       insertNode(this.treeData, node.nodeId, children);
+    },
+
+    removeSimilarArtists(node) {
+      removeChildren(this.treeData, node.nodeId);
     },
 
     zoomIn() {
@@ -1404,6 +1431,14 @@ Vue.component('vue-tree-node', {
       >
         Add Similar Artists
       </button>
+
+      <button
+        v-if="node.children && node.children.length"
+        @click="removeSimilarArtists(node)" 
+        class="node-control"
+      >
+        Remove Similar Artists
+      </button>
     </div>
   `,
   props: {
@@ -1412,6 +1447,10 @@ Vue.component('vue-tree-node', {
   methods: {
     addSimilarArtists(node) {
       this.$emit('add-similar-artists', node);
+    },
+
+    removeSimilarArtists(node) {
+      this.$emit('remove-similar-artists', node);
     }
 
   }
