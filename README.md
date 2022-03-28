@@ -1,6 +1,8 @@
 # Cider Plugin Template
 
-This is a [Cider Music](https://github.com/ciderapp/Cider) plugin for providing recommendations based on a given artist.
+This is a [Cider Music](https://github.com/ciderapp/Cider) plugin for providing recommendations based on a given artist in a fast and easy to read format.
+
+![An example of the plugin working in Cider](https://i.imgur.com/1yLfypv.png)
 
 ## Installation
 
