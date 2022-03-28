@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config()
 
 const DEV = (process.env.NODE_ENV !== 'production')
-const OUTPUT_DIR = (process.env.OUTPUT_DIR && DEV) || 'dist'
+const OUTPUT_DIR = (DEV && process.env.OUTPUT_DIR) ? process.env.OUTPUT_DIR : 'dist'
 
 export default {
   input: [
@@ -31,6 +31,7 @@ export default {
     copy({
       targets: [
         { src: 'package.json', dest: OUTPUT_DIR },
+        { src: 'README.md', dest: OUTPUT_DIR },
         { src: 'src/styles/musicrecommendation.less', dest: OUTPUT_DIR },
         { src: 'src/assets', dest: OUTPUT_DIR }
       ]

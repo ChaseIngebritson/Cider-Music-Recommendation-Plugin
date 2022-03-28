@@ -1,7 +1,7 @@
 import VueTree from '@ssthouse/vue-tree-chart'
 import { v4 as uuidv4 } from 'uuid';
-import { getArtist, getSimilarArtists, getArtwork } from '../utils/frontend/music'
-import { insertNode } from '../utils/tree'
+import { getArtist, getSimilarArtists, getArtwork, getNowPlayingArtist } from '../utils/frontend/music'
+import { insertNode, removeChildren } from '../utils/tree'
 
 Vue.component('plugin.music-recommendations', {
   template: `
@@ -21,7 +21,11 @@ Vue.component('plugin.music-recommendations', {
         class="tree"
       >
         <template v-slot:node="{ node }">
-          <vue-tree-node :node="node" @add-similar-artists="addSimilarArtists(node)" />
+          <vue-tree-node 
+            :node="node" 
+            @add-similar-artists="addSimilarArtists(node)"
+            @remove-similar-artists="removeSimilarArtists(node)"
+          />
         </template>
       </vue-tree>
     </div>
@@ -40,7 +44,8 @@ Vue.component('plugin.music-recommendations', {
     }
   },
   async mounted () {
-    const artist = await getArtist(1500046401)
+    const nowPlayingArtist = await getNowPlayingArtist()
+    const artist = await getArtist(nowPlayingArtist.id)
     this.treeData = this.buildNode(artist)
   },
   methods: {
@@ -63,6 +68,9 @@ Vue.component('plugin.music-recommendations', {
       })
       
       insertNode(this.treeData, node.nodeId, children)
+    },
+    removeSimilarArtists (node) {
+      removeChildren(this.treeData, node.nodeId)
     },
     zoomIn () {
       this.$refs.tree.zoomIn()
@@ -96,6 +104,14 @@ Vue.component('vue-tree-node', {
       >
         Add Similar Artists
       </button>
+
+      <button
+        v-if="node.children && node.children.length"
+        @click="removeSimilarArtists(node)" 
+        class="node-control"
+      >
+        Remove Similar Artists
+      </button>
     </div>
   `,
   props: {
@@ -104,6 +120,9 @@ Vue.component('vue-tree-node', {
   methods: {
     addSimilarArtists(node) {
       this.$emit('add-similar-artists', node)
+    },
+    removeSimilarArtists(node) {
+      this.$emit('remove-similar-artists', node)
     }
   }
 });

@@ -64,9 +64,7 @@ export default class MusicRecommendationsPlugin {
      * @param attributes Music Attributes (attributes.status = current state)
      */
     async onPlaybackStateDidChange(attributes) {
-
-        const res = await this.getRelatedArtists("1500046401")
-        this.debug(res)
+    
     }
 
     /**

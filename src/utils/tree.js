@@ -7,3 +7,13 @@ export function insertNode(node, nodeId, newNode) {
     }
   }
 }
+
+export function removeChildren(node, nodeId) {
+  if (node.nodeId === nodeId) { 
+    node.children = [];
+  } else if (node.children) {
+    for (let i = 0; i < node.children.length; i++) {
+      removeChildren(node.children[i], nodeId);
+    }
+  }
+}
