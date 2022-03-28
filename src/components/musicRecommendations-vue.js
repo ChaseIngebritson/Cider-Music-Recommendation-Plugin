@@ -1,17 +1,27 @@
 import VueTree from '@ssthouse/vue-tree-chart'
+import { v4 as uuidv4 } from 'uuid';
 import { getArtist, getSimilarArtists, getArtwork } from '../utils/frontend/music'
+import { insertNode } from '../utils/tree'
 
 Vue.component('plugin.music-recommendations', {
   template: `
     <div>
+      <vue-tree-controls
+        @zoom-in="zoomIn"
+        @zoom-out="zoomOut"
+        @zoom-reset="zoomReset"
+      />
+
       <vue-tree
         :dataset="treeData"
         :config="treeConfig"
-        direction="horizontal"
+        direction="vertical"
+        :collapse-enabled="false"
+        ref="tree"
         class="tree"
       >
-        <template v-slot:node="{ node, collapsed }" :collapsed="true">
-          <vue-tree-node :node="node" :collapsed="collapsed" @add-similar-artists="addSimilarArtists(node)" />
+        <template v-slot:node="{ node }">
+          <vue-tree-node :node="node" @add-similar-artists="addSimilarArtists(node)" />
         </template>
       </vue-tree>
     </div>
@@ -23,9 +33,9 @@ Vue.component('plugin.music-recommendations', {
     return {
       treeData: {},
       treeConfig: { 
-        nodeWidth: 120, 
-        nodeHeight: 80, 
-        levelHeight: 200
+        nodeWidth: 250, 
+        nodeHeight: 100, 
+        levelHeight: 350
       }
     }
   },
@@ -36,50 +46,86 @@ Vue.component('plugin.music-recommendations', {
   methods: {
     buildNode (artist) {
       return {
+        nodeId: uuidv4(),
+        id: artist.id,
         name: artist.attributes.name,
-        artwork: getArtwork(artist.attributes.artwork, 50, 50),
-        details: artist,
+        artwork: getArtwork(artist.attributes.artwork, 175, 175),
+        genres: artist.attributes.genreNames.join(', '),
+        details: JSON.stringify(artist),
         children: []
       }
     },
     async addSimilarArtists (node) {
-      const relatedArtists = await getSimilarArtists(node.details.id)
+      const relatedArtists = await getSimilarArtists(node.id)
       
       const children = relatedArtists.map(artist => {
         return this.buildNode(artist)
       })
-
-      node.children = children
-      console.log(node)
+      
+      insertNode(this.treeData, node.nodeId, children)
+    },
+    zoomIn () {
+      this.$refs.tree.zoomIn()
+    },
+    zoomOut () {
+      this.$refs.tree.zoomOut()
+    },
+    zoomReset () {
+      this.$refs.tree.restoreScale()
     }
   }
 });
 
 Vue.component('vue-tree-node', {
   template: `
-    <div
-      class="tree-rich-media-node"
-      :style="{ border: collapsed ? '2px solid grey' : '' }"
-    >
-      <img
-        :src="node.artwork"
-        style="width: 50px; height: 50px; border-raduis: 4px;"
+    <div class="rich-media-node">
+      <!-- <img :src="node.artwork" class="image" /> -->
+      <mediaitem-square
+        v-if="node.details"
+        :item="JSON.parse(node.details)"
       />
-      <span style="padding: 4px 0; font-weight: bold;">{{ node.name }}</span>
-      <button @click="onNodeClick(node)">Open Artist</button>
-      <button @click="addSimilarArtists(node)">Add Similar Artists</button>
+      
+      <div class="content">
+        <div class="subtitle">{{ node.genres }}</div>
+      </div>
+
+      <button
+        v-if="!node.children || !node.children.length"
+        @click="addSimilarArtists(node)" 
+        class="node-control"
+      >
+        Add Similar Artists
+      </button>
     </div>
   `,
   props: {
-    node: Object,
-    collapsed: Boolean
+    node: Object
   },
   methods: {
-    async onNodeClick(node) {
-      await window.app.getArtistFromID(node.details.id)
-    },
     addSimilarArtists(node) {
       this.$emit('add-similar-artists', node)
     }
   }
+});
+
+Vue.component('vue-tree-controls', {
+  template: `
+    <div class="control-container">
+      <button 
+        @click="$emit('zoom-in')" 
+        class="control-button icon-zoom-in"
+        title="Zoom In"
+      />
+      <button 
+        @click="$emit('zoom-out')" 
+        class="control-button icon-zoom-out"
+        title="Zoom Out"
+      />
+      <button 
+        @click="$emit('zoom-reset')" 
+        class="control-button icon-rotate-ccw"
+        title="Reset Zoom"
+      />
+    </div>
+  `
 });

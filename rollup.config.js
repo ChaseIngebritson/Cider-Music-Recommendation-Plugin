@@ -30,7 +30,8 @@ export default {
     copy({
       targets: [
         { src: 'package.json', dest: OUTPUT_DIR },
-        { src: 'src/styles/musicrecommendation.less', dest: OUTPUT_DIR }
+        { src: 'src/styles/musicrecommendation.less', dest: OUTPUT_DIR },
+        { src: 'src/assets', dest: OUTPUT_DIR }
       ]
     })
   ]

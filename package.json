@@ -31,6 +31,7 @@
     "d3-selection": "^3.0.0",
     "d3-transition": "^3.0.1",
     "dotenv": "^16.0.0",
+    "uuid": "^8.3.2",
     "vue": "^2.6.14",
     "vued3tree": "^5.1.0"
   }
