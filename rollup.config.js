@@ -6,7 +6,8 @@ import dotenv from 'dotenv';
 
 dotenv.config()
 
-const OUTPUT_DIR = process.env.OUTPUT_DIR || 'dist'
+const DEV = (process.env.NODE_ENV !== 'production')
+const OUTPUT_DIR = (process.env.OUTPUT_DIR && DEV) || 'dist'
 
 export default {
   input: [
