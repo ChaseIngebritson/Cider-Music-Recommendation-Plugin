@@ -1202,75 +1202,6 @@ var vueTreeChart = {exports: {}};
 /******/ // This entry module can't be inlined because the eval devtool is used.
 /******/var __webpack_exports__=__webpack_require__("./src/vue-tree/index.ts");/******/ /******/return __webpack_exports__;/******/}());});})(vueTreeChart);var VueTree = /*@__PURE__*/getDefaultExportFromCjs(vueTreeChart.exports);
 
-async function getArtist(id) {
-  const musickit = window.app.mk;
-  const storefront = musickit.storefrontId;
-  const response = await musickit.api.v3.music(`/v1/catalog/${storefront}/artists/${id}`);
-  const artist = response?.data?.data[0];
-  return artist;
-}
-async function getSimilarArtists(id) {
-  const musickit = window.app.mk;
-  const storefront = musickit.storefrontId;
-  const response = await musickit.api.v3.music(`/v1/catalog/${storefront}/artists/${id}`, {
-    views: ['similar-artists']
-  });
-  const artist = response?.data?.data[0];
-  return artist.views['similar-artists'].data;
-}
-function getArtwork(artwork, width, height) {
-  return artwork.url.replace('{w}', width).replace('{h}', height);
-}
-async function getNowPlayingArtist() {
-  const musickit = window.app.mk;
-  const nowPlayingSong = musickit.nowPlayingItem;
-  const storefront = musickit.storefrontId;
-  const response = await musickit.api.v3.music(`/v1/catalog/${storefront}/songs/${nowPlayingSong.songId}`, {
-    views: ['artists']
-  });
-  return response?.data?.data[0]?.relationships?.artists?.data[0];
-}
-
-function insertNode(node, nodeId, newNode) {
-  if (node.nodeId === nodeId) {
-    node.children = newNode;
-  } else if (node.children) {
-    for (let i = 0; i < node.children.length; i++) {
-      insertNode(node.children[i], nodeId, newNode);
-    }
-  }
-}
-function removeChildren(node, nodeId) {
-  if (node.nodeId === nodeId) {
-    node.children = [];
-  } else if (node.children) {
-    for (let i = 0; i < node.children.length; i++) {
-      removeChildren(node.children[i], nodeId);
-    }
-  }
-}
-function getAllIds(node) {
-  const ids = new Set();
-  ids.add(node.id);
-  getAllIdsHelper(node);
-  return ids;
-
-  function getAllIdsHelper(node) {
-    if (node.children) {
-      for (let i = 0; i < node.children.length; i++) {
-        ids.add(node.children[i].id);
-        getAllIdsHelper(node.children[i]);
-      }
-    }
-  }
-}
-
-const PLUGIN_NAME = 'music-recommendations';
-
-function debug(text) {
-  console.log(`[Plugin][${PLUGIN_NAME}]`, text);
-}
-
 Vue.component('plugin.music-recommendations', {
   template: `
     <div>
@@ -1325,14 +1256,14 @@ Vue.component('plugin.music-recommendations', {
   async mounted() {
     const settings = this.getLocalStorage('settings');
     if (settings) this.settings = settings;
-    const nowPlayingArtist = await getNowPlayingArtist();
+    const nowPlayingArtist = await MusicRecommendationsPlugin.getNowPlayingArtist();
     const localTreeData = this.getLocalStorage('treeData'); // If the local save exists and it's the same artist or there is no artist, use the local save
 
     if (localTreeData && (localTreeData.id === nowPlayingArtist.id || !nowPlayingArtist)) {
       this.treeData = localTreeData;
-      this.loadedArtists = getAllIds(this.treeData); // If no save is loaded, use the now playing artist
+      this.loadedArtists = MusicRecommendationsPlugin.getAllIds(this.treeData); // If no save is loaded, use the now playing artist
     } else if (nowPlayingArtist) {
-      const artist = await getArtist(nowPlayingArtist.id);
+      const artist = await MusicRecommendationsPlugin.getArtist(nowPlayingArtist.id);
       this.treeData = this.buildNode(artist);
       this.loadedArtists.add(this.treeData.id);
     }
@@ -1354,7 +1285,6 @@ Vue.component('plugin.music-recommendations', {
         nodeId: window.uuidv4(),
         id: artist.id,
         name: artist.attributes.name,
-        artwork: getArtwork(artist.attributes.artwork, 175, 175),
         genres: artist.attributes.genreNames.join(', '),
         details: JSON.stringify(artist),
         children: []
@@ -1362,15 +1292,15 @@ Vue.component('plugin.music-recommendations', {
     },
 
     async addSimilarArtists(node) {
-      const relatedArtists = await getSimilarArtists(node.id);
-      debug(`Found ${relatedArtists.length} related artists`);
+      const relatedArtists = await MusicRecommendationsPlugin.getSimilarArtists(node.id);
+      MusicRecommendationsPlugin.debug(`Found ${relatedArtists.length} related artists`);
       if (!relatedArtists.length) return window.notyf.error('Unable to find any related artists');
       let children = relatedArtists.map(artist => {
         return this.buildNode(artist);
       });
 
       if (!this.settings.allowDuplicateArtists) {
-        debug(`Removing duplicate artists`);
+        MusicRecommendationsPlugin.debug(`Removing duplicate artists`);
         children = children.filter(child => {
           return !this.loadedArtists.has(child.id);
         });
@@ -1381,15 +1311,15 @@ Vue.component('plugin.music-recommendations', {
       children.forEach(child => {
         this.loadedArtists.add(child.id);
       });
-      insertNode(this.treeData, node.nodeId, children);
+      MusicRecommendationsPlugin.insertNode(this.treeData, node.nodeId, children);
       this.updateLocalStorage('treeData', this.treeData);
     },
 
     removeSimilarArtists(node) {
-      removeChildren(this.treeData, node.nodeId);
+      MusicRecommendationsPlugin.removeChildren(this.treeData, node.nodeId);
       this.updateLocalStorage('treeData', this.treeData);
-      this.loadedArtists = getAllIds(this.treeData);
-      debug(`Found ${this.loadedArtists.size} loaded artists`);
+      this.loadedArtists = MusicRecommendationsPlugin.getAllIds(this.treeData);
+      MusicRecommendationsPlugin.debug(`Found ${this.loadedArtists.size} loaded artists`);
     },
 
     zoomIn() {
@@ -1405,13 +1335,13 @@ Vue.component('plugin.music-recommendations', {
     },
 
     updateLocalStorage(key, data) {
-      localStorage.setItem(`plugin.${PLUGIN_NAME}.${key}`, JSON.stringify(data));
-      debug(`Updated ${key} in localStorage`);
+      localStorage.setItem(`plugin.${MusicRecommendationsPlugin.PLUGIN_NAME}.${key}`, JSON.stringify(data));
+      MusicRecommendationsPlugin.debug(`Updated ${key} in localStorage`, data);
     },
 
     getLocalStorage(key) {
-      const data = localStorage.getItem(`plugin.${PLUGIN_NAME}.${key}`);
-      if (data) debug(`Loaded ${key} from localStorage`, JSON.parse(data));
+      const data = localStorage.getItem(`plugin.${MusicRecommendationsPlugin.PLUGIN_NAME}.${key}`);
+      if (data) MusicRecommendationsPlugin.debug(`Loaded ${key} from localStorage`, JSON.parse(data));
       return JSON.parse(data);
     },
 
@@ -1424,7 +1354,6 @@ Vue.component('plugin.music-recommendations', {
 Vue.component('vue-tree-node', {
   template: `
     <div class="rich-media-node">
-      <!-- <img :src="node.artwork" class="image" /> -->
       <mediaitem-square
         v-if="node.details"
         :item="JSON.parse(node.details)"

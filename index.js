@@ -1,7 +1,6 @@
 'use strict';
 
 var path = require('path');
-require('electron');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
@@ -67,7 +66,7 @@ class MusicRecommendationsPlugin {
    */
 
 
-  async onPlaybackStateDidChange(attributes) {}
+  onPlaybackStateDidChange(attributes) {}
   /**
    * Runs on song change
    * @param attributes Music Attributes
