@@ -17,3 +17,21 @@ export function removeChildren(node, nodeId) {
     }
   }
 }
+
+export function getAllIds(node) {
+  const ids = new Set()
+  ids.add(node.id)
+
+  getAllIdsHelper(node)
+  
+  return ids
+
+  function getAllIdsHelper (node) {
+    if (node.children) {
+      for (let i = 0; i < node.children.length; i++) {
+        ids.add(node.children[i].id)
+        getAllIdsHelper(node.children[i]);
+      }
+    }
+  }
+}

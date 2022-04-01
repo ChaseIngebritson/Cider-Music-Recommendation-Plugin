@@ -101,6 +101,27 @@
       &-rotate-ccw {
         background-image: url("./assets/svg/rotate-ccw.svg");
       }
+
+      &-settings {
+        background-image: url("./assets/svg/settings.svg");
+      }
+    }
+  }
+}
+
+.modal-window {
+  .modal-item {
+    &:hover {
+      // This acts as an override for the .playlist-item hover
+      background: inherit !important;
+    }
+
+    &-name {
+      width: 100%;
+    }
+
+    &-control {
+      width: auto;
     }
   }
 }

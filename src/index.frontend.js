@@ -2,9 +2,9 @@
 
 class MusicRecommendationsPlugin {
   constructor() {
-    CiderFrontAPI.StyleSheets.Add("./plugins/gh_462093451/musicrecommendation.less")
+    CiderFrontAPI.StyleSheets.Add('./plugins/gh_462093451/musicrecommendation.less')
 
-    this.menuEntryId = uuidv4()
+    this.menuEntryId = window.uuidv4()
 
     const menuEntry = new CiderFrontAPI.Objects.MenuEntry()
     menuEntry.Id = this.menuEntryId
