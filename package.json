@@ -1,6 +1,6 @@
 {
   "name": "music-recommendations",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A Cider Music plugin for providing recommendations based on a given artist in a fast and easy to read format.",
   "main": "index.js",
   "scripts": {
