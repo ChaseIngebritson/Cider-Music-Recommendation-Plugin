@@ -1202,80 +1202,6 @@ var vueTreeChart = {exports: {}};
 /******/ // This entry module can't be inlined because the eval devtool is used.
 /******/var __webpack_exports__=__webpack_require__("./src/vue-tree/index.ts");/******/ /******/return __webpack_exports__;/******/}());});})(vueTreeChart);var VueTree = /*@__PURE__*/getDefaultExportFromCjs(vueTreeChart.exports);
 
-// Unique ID creation requires a high quality random # generator. In the browser we therefore
-// require the crypto API and do not support built-in fallback to lower quality random number
-// generators (like Math.random()).
-var getRandomValues;
-var rnds8 = new Uint8Array(16);
-function rng() {
-  // lazy load so that environments that need to polyfill have a chance to do so
-  if (!getRandomValues) {
-    // getRandomValues needs to be invoked in a context where "this" is a Crypto implementation. Also,
-    // find the complete implementation of crypto (msCrypto) on IE11.
-    getRandomValues = typeof crypto !== 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto) || typeof msCrypto !== 'undefined' && typeof msCrypto.getRandomValues === 'function' && msCrypto.getRandomValues.bind(msCrypto);
-
-    if (!getRandomValues) {
-      throw new Error('crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported');
-    }
-  }
-
-  return getRandomValues(rnds8);
-}
-
-var REGEX = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
-
-function validate(uuid) {
-  return typeof uuid === 'string' && REGEX.test(uuid);
-}
-
-/**
- * Convert array of 16 byte values to UUID string format of the form:
- * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
- */
-
-var byteToHex = [];
-
-for (var i = 0; i < 256; ++i) {
-  byteToHex.push((i + 0x100).toString(16).substr(1));
-}
-
-function stringify(arr) {
-  var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0; // Note: Be careful editing this code!  It's been tuned for performance
-  // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
-
-  var uuid = (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase(); // Consistency check for valid UUID.  If this throws, it's likely due to one
-  // of the following:
-  // - One or more input array values don't map to a hex octet (leading to
-  // "undefined" in the uuid)
-  // - Invalid input values for the RFC `version` or `variant` fields
-
-  if (!validate(uuid)) {
-    throw TypeError('Stringified UUID is invalid');
-  }
-
-  return uuid;
-}
-
-function v4(options, buf, offset) {
-  options = options || {};
-  var rnds = options.random || (options.rng || rng)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
-
-  rnds[6] = rnds[6] & 0x0f | 0x40;
-  rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
-
-  if (buf) {
-    offset = offset || 0;
-
-    for (var i = 0; i < 16; ++i) {
-      buf[offset + i] = rnds[i];
-    }
-
-    return buf;
-  }
-
-  return stringify(rnds);
-}
-
 async function getArtist(id) {
   const musickit = window.app.mk;
   const storefront = musickit.storefrontId;
@@ -1323,6 +1249,27 @@ function removeChildren(node, nodeId) {
     }
   }
 }
+function getAllIds(node) {
+  const ids = new Set();
+  ids.add(node.id);
+  getAllIdsHelper(node);
+  return ids;
+
+  function getAllIdsHelper(node) {
+    if (node.children) {
+      for (let i = 0; i < node.children.length; i++) {
+        ids.add(node.children[i].id);
+        getAllIdsHelper(node.children[i]);
+      }
+    }
+  }
+}
+
+const PLUGIN_NAME = 'music-recommendations';
+
+function debug(text) {
+  console.log(`[Plugin][${PLUGIN_NAME}]`, text);
+}
 
 Vue.component('plugin.music-recommendations', {
   template: `
@@ -1331,6 +1278,13 @@ Vue.component('plugin.music-recommendations', {
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @zoom-reset="zoomReset"
+        @open-settings="toggleSettingsMenu(true)"
+      />
+
+      <vue-settings 
+        v-if="settingsMenuOpen"
+        :allow-duplicate-artists.sync="settings.allowDuplicateArtists"
+        @close-settings="toggleSettingsMenu(false)"
       />
 
       <vue-tree
@@ -1354,28 +1308,50 @@ Vue.component('plugin.music-recommendations', {
   components: {
     'vue-tree': VueTree
   },
-
-  data() {
-    return {
-      treeData: {},
-      treeConfig: {
-        nodeWidth: 250,
-        nodeHeight: 100,
-        levelHeight: 350
-      }
-    };
-  },
+  data: () => ({
+    treeData: {},
+    treeConfig: {
+      nodeWidth: 250,
+      nodeHeight: 100,
+      levelHeight: 350
+    },
+    loadedArtists: new Set(),
+    settings: {
+      allowDuplicateArtists: false
+    },
+    settingsMenuOpen: false
+  }),
 
   async mounted() {
+    const settings = this.getLocalStorage('settings');
+    if (settings) this.settings = settings;
     const nowPlayingArtist = await getNowPlayingArtist();
-    const artist = await getArtist(nowPlayingArtist.id);
-    this.treeData = this.buildNode(artist);
+    const localTreeData = this.getLocalStorage('treeData'); // If the local save exists and it's the same artist or there is no artist, use the local save
+
+    if (localTreeData && (localTreeData.id === nowPlayingArtist.id || !nowPlayingArtist)) {
+      this.treeData = localTreeData;
+      this.loadedArtists = getAllIds(this.treeData); // If no save is loaded, use the now playing artist
+    } else if (nowPlayingArtist) {
+      const artist = await getArtist(nowPlayingArtist.id);
+      this.treeData = this.buildNode(artist);
+      this.loadedArtists.add(this.treeData.id);
+    }
   },
 
+  watch: {
+    settings: {
+      deep: true,
+
+      handler() {
+        this.updateLocalStorage('settings', this.settings);
+      }
+
+    }
+  },
   methods: {
     buildNode(artist) {
       return {
-        nodeId: v4(),
+        nodeId: window.uuidv4(),
         id: artist.id,
         name: artist.attributes.name,
         artwork: getArtwork(artist.attributes.artwork, 175, 175),
@@ -1387,14 +1363,33 @@ Vue.component('plugin.music-recommendations', {
 
     async addSimilarArtists(node) {
       const relatedArtists = await getSimilarArtists(node.id);
-      const children = relatedArtists.map(artist => {
+      debug(`Found ${relatedArtists.length} related artists`);
+      if (!relatedArtists.length) return window.notyf.error('Unable to find any related artists');
+      let children = relatedArtists.map(artist => {
         return this.buildNode(artist);
       });
+
+      if (!this.settings.allowDuplicateArtists) {
+        debug(`Removing duplicate artists`);
+        children = children.filter(child => {
+          return !this.loadedArtists.has(child.id);
+        });
+      }
+
+      if (!children.length) return window.notyf.error('All related artists exist in the tree already'); // Push the new artist to the Set of loaded artists
+
+      children.forEach(child => {
+        this.loadedArtists.add(child.id);
+      });
       insertNode(this.treeData, node.nodeId, children);
+      this.updateLocalStorage('treeData', this.treeData);
     },
 
     removeSimilarArtists(node) {
       removeChildren(this.treeData, node.nodeId);
+      this.updateLocalStorage('treeData', this.treeData);
+      this.loadedArtists = getAllIds(this.treeData);
+      debug(`Found ${this.loadedArtists.size} loaded artists`);
     },
 
     zoomIn() {
@@ -1407,6 +1402,21 @@ Vue.component('plugin.music-recommendations', {
 
     zoomReset() {
       this.$refs.tree.restoreScale();
+    },
+
+    updateLocalStorage(key, data) {
+      localStorage.setItem(`plugin.${PLUGIN_NAME}.${key}`, JSON.stringify(data));
+      debug(`Updated ${key} in localStorage`);
+    },
+
+    getLocalStorage(key) {
+      const data = localStorage.getItem(`plugin.${PLUGIN_NAME}.${key}`);
+      if (data) debug(`Loaded ${key} from localStorage`, JSON.parse(data));
+      return JSON.parse(data);
+    },
+
+    toggleSettingsMenu(mode) {
+      this.settingsMenuOpen = mode;
     }
 
   }
@@ -1473,6 +1483,44 @@ Vue.component('vue-tree-controls', {
         class="control-button icon-rotate-ccw"
         title="Reset Zoom"
       />
+      <button 
+        @click="$emit('open-settings')" 
+        class="control-button icon-settings"
+        title="Open Settings"
+      />
     </div>
   `
+});
+Vue.component('vue-settings', {
+  template: `
+    <div 
+      class="modal-fullscreen addtoplaylist-panel" 
+      @click.self="$emit('close-settings')" 
+      @contextmenu.self="$emit('close-settings')"
+    >
+      <div class="modal-window">
+        <div class="modal-header">
+          <div class="modal-title">Plugin Settings</div>
+          <button class="close-btn" @click="$emit('close-settings')"></button>
+        </div>
+        <div class="modal-content">
+          <div class="modal-item playlist-item">
+            <div class="modal-item-name">Allow Duplicate Artists</div>
+            <input 
+              type="checkbox" 
+              switch
+              :checked="allowDuplicateArtists"
+              @change="$emit('update:allow-duplicate-artists', $event.target.checked)"
+              class="modal-item-control"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+  props: {
+    allowDuplicateArtists: {
+      type: Boolean
+    }
+  }
 });
