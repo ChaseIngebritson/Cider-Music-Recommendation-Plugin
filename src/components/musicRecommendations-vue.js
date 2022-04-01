@@ -1,8 +1,4 @@
 import VueTree from '@ssthouse/vue-tree-chart'
-import { getArtist, getSimilarArtists, getArtwork, getNowPlayingArtist } from '../utils/frontend/music'
-import { insertNode, removeChildren, getAllIds } from '../utils/tree'
-import { debug } from '../utils/debug'
-import { PLUGIN_NAME } from '../constants'
 
 Vue.component('plugin.music-recommendations', {
   template: `
@@ -58,17 +54,17 @@ Vue.component('plugin.music-recommendations', {
     const settings = this.getLocalStorage('settings')
     if (settings) this.settings = settings
 
-    const nowPlayingArtist = await getNowPlayingArtist()
+    const nowPlayingArtist = await MusicRecommendationsPlugin.getNowPlayingArtist()
     const localTreeData = this.getLocalStorage('treeData')
 
     // If the local save exists and it's the same artist or there is no artist, use the local save
     if (localTreeData && (localTreeData.id === nowPlayingArtist.id || !nowPlayingArtist)) {
       this.treeData = localTreeData
-      this.loadedArtists = getAllIds(this.treeData)
+      this.loadedArtists = MusicRecommendationsPlugin.getAllIds(this.treeData)
 
     // If no save is loaded, use the now playing artist
     } else if (nowPlayingArtist) {
-      const artist = await getArtist(nowPlayingArtist.id)
+      const artist = await MusicRecommendationsPlugin.getArtist(nowPlayingArtist.id)
       this.treeData = this.buildNode(artist)
       this.loadedArtists.add(this.treeData.id)
     }
@@ -87,15 +83,14 @@ Vue.component('plugin.music-recommendations', {
         nodeId: window.uuidv4(),
         id: artist.id,
         name: artist.attributes.name,
-        artwork: getArtwork(artist.attributes.artwork, 175, 175),
         genres: artist.attributes.genreNames.join(', '),
         details: JSON.stringify(artist),
         children: []
       }
     },
     async addSimilarArtists (node) {
-      const relatedArtists = await getSimilarArtists(node.id)
-      debug(`Found ${relatedArtists.length} related artists`)
+      const relatedArtists = await MusicRecommendationsPlugin.getSimilarArtists(node.id)
+      MusicRecommendationsPlugin.debug(`Found ${relatedArtists.length} related artists`)
 
       if (!relatedArtists.length) return window.notyf.error('Unable to find any related artists')
       
@@ -104,7 +99,7 @@ Vue.component('plugin.music-recommendations', {
       })
 
       if (!this.settings.allowDuplicateArtists) {
-        debug(`Removing duplicate artists`)
+        MusicRecommendationsPlugin.debug(`Removing duplicate artists`)
         children = children.filter(child => {
           return !this.loadedArtists.has(child.id)
         })
@@ -117,16 +112,16 @@ Vue.component('plugin.music-recommendations', {
         this.loadedArtists.add(child.id)
       })
       
-      insertNode(this.treeData, node.nodeId, children)
+      MusicRecommendationsPlugin.insertNode(this.treeData, node.nodeId, children)
 
       this.updateLocalStorage('treeData', this.treeData)
     },
     removeSimilarArtists (node) {
-      removeChildren(this.treeData, node.nodeId)
+      MusicRecommendationsPlugin.removeChildren(this.treeData, node.nodeId)
       this.updateLocalStorage('treeData', this.treeData)
 
-      this.loadedArtists = getAllIds(this.treeData)
-      debug(`Found ${this.loadedArtists.size} loaded artists`)
+      this.loadedArtists = MusicRecommendationsPlugin.getAllIds(this.treeData)
+      MusicRecommendationsPlugin.debug(`Found ${this.loadedArtists.size} loaded artists`)
     },
     zoomIn () {
       this.$refs.tree.zoomIn()
@@ -138,14 +133,14 @@ Vue.component('plugin.music-recommendations', {
       this.$refs.tree.restoreScale()
     },
     updateLocalStorage (key, data) {
-      localStorage.setItem(`plugin.${PLUGIN_NAME}.${key}`, JSON.stringify(data))
+      localStorage.setItem(`plugin.${MusicRecommendationsPlugin.PLUGIN_NAME}.${key}`, JSON.stringify(data))
 
-      debug(`Updated ${key} in localStorage`, data)
+      MusicRecommendationsPlugin.debug(`Updated ${key} in localStorage`, data)
     },
     getLocalStorage (key) {
-      const data = localStorage.getItem(`plugin.${PLUGIN_NAME}.${key}`)
+      const data = localStorage.getItem(`plugin.${MusicRecommendationsPlugin.PLUGIN_NAME}.${key}`)
 
-      if (data) debug(`Loaded ${key} from localStorage`, JSON.parse(data))
+      if (data) MusicRecommendationsPlugin.debug(`Loaded ${key} from localStorage`, JSON.parse(data))
       return JSON.parse(data)
     },
     toggleSettingsMenu (mode) {
@@ -157,7 +152,6 @@ Vue.component('plugin.music-recommendations', {
 Vue.component('vue-tree-node', {
   template: `
     <div class="rich-media-node">
-      <!-- <img :src="node.artwork" class="image" /> -->
       <mediaitem-square
         v-if="node.details"
         :item="JSON.parse(node.details)"

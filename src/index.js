@@ -1,5 +1,4 @@
 import path from 'path'
-import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 
 export default class MusicRecommendationsPlugin {
     /**
@@ -63,7 +62,7 @@ export default class MusicRecommendationsPlugin {
      * Runs on playback State Change
      * @param attributes Music Attributes (attributes.status = current state)
      */
-    async onPlaybackStateDidChange(attributes) {
+    onPlaybackStateDidChange(attributes) {
     
     }
 
